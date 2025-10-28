@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Control Mano 3D</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #111; color: white; font-family: sans-serif; }
+    body { margin: 0; overflow: hidden; background: #111; font-family: sans-serif; }
     #sliders {
       position: absolute;
       bottom: 10px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0,0,0,0.6);
       padding: 10px;
       border-radius: 10px;
     }
@@ -23,20 +23,18 @@
 </head>
 <body>
   <div id="sliders">
-    <input type="range" id="d1" min="0" max="180" value="90">
-    <input type="range" id="d2" min="0" max="180" value="90">
-    <input type="range" id="d3" min="0" max="180" value="90">
-    <input type="range" id="d4" min="0" max="180" value="90">
-    <input type="range" id="d5" min="0" max="180" value="90">
+    <input type="range" id="pulgar" min="0" max="90" value="0" title="Pulgar">
+    <input type="range" id="indice" min="0" max="90" value="0" title="Índice">
+    <input type="range" id="medio" min="0" max="90" value="0" title="Medio">
+    <input type="range" id="anular" min="0" max="90" value="0" title="Anular">
+    <input type="range" id="menique" min="0" max="90" value="0" title="Meñique">
   </div>
 
-  <!-- Three.js -->
+  <!-- Three.js y loaders -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/loaders/MTLLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/loaders/OBJLoader.js"></script>
 
   <script>
-    // Escena, cámara y renderer
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -44,36 +42,51 @@
     document.body.appendChild(renderer.domElement);
 
     // Luces
-    const light1 = new THREE.DirectionalLight(0xffffff, 2);
-    light1.position.set(5,5,5);
-    scene.add(light1);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 5);
+    directionalLight.position.set(5,5,5);
+    scene.add(directionalLight);
 
-    const light2 = new THREE.AmbientLight(0x606060);
-    scene.add(light2);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
 
-    // Cargar modelo OBJ con materiales
-    let hand;
-    const mtlLoader = new THREE.MTLLoader();
-    mtlLoader.load('Blank.mtl', function(materials){
-      materials.preload();
-      const objLoader = new THREE.OBJLoader();
-      objLoader.setMaterials(materials);
-      objLoader.load('12683_hand_v1_FINAL.obj', function(obj){
-        hand = obj;
-        hand.scale.set(0.01,0.01,0.01); // Ajusta según el tamaño del modelo
-        hand.position.set(0,0,0);
-        scene.add(hand);
-      }, undefined, function(err){
-        console.error("Error cargando OBJ:", err);
+    // Sliders
+    const sliders = {
+      Pulgar: document.getElementById('pulgar'),
+      Indice: document.getElementById('indice'),
+      Medio: document.getElementById('medio'),
+      Anular: document.getElementById('anular'),
+      Menique: document.getElementById('menique')
+    };
+
+    let mano;
+    let dedos = []; // arreglo para los primeros 5 meshes
+
+    // Cargar OBJ
+    const loader = new THREE.OBJLoader();
+    loader.load('12683_hand_v1_FINAL.obj', function(obj){
+      mano = obj;
+
+      // Aplicar material blanco
+      obj.traverse(function(child){
+        if(child.isMesh){
+          child.material = new THREE.MeshStandardMaterial({ color: 0xffffff });
+          if(dedos.length < 5) dedos.push(child); // guardamos los primeros 5 meshes
+        }
       });
+
+      mano.scale.set(0.01,0.01,0.01);
+      mano.position.set(0,0,0);
+      mano.rotation.x = -Math.PI/2;
+      scene.add(mano);
+    }, undefined, function(error){
+      console.error("Error cargando OBJ:", error);
     });
 
-    camera.position.z = 2;
+    camera.position.set(0,0,1.5);
 
     // Animación
     function animate(){
       requestAnimationFrame(animate);
-      if(hand) hand.rotation.y += 0.005;
       renderer.render(scene, camera);
     }
     animate();
@@ -84,6 +97,14 @@
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
+
+    // Vincular sliders automáticamente
+    sliders.Pulgar.addEventListener('input', ()=>{ if(dedos[0]) dedos[0].rotation.z = THREE.MathUtils.degToRad(sliders.Pulgar.value); });
+    sliders.Indice.addEventListener('input', ()=>{ if(dedos[1]) dedos[1].rotation.z = THREE.MathUtils.degToRad(sliders.Indice.value); });
+    sliders.Medio.addEventListener('input', ()=>{ if(dedos[2]) dedos[2].rotation.z = THREE.MathUtils.degToRad(sliders.Medio.value); });
+    sliders.Anular.addEventListener('input', ()=>{ if(dedos[3]) dedos[3].rotation.z = THREE.MathUtils.degToRad(sliders.Anular.value); });
+    sliders.Menique.addEventListener('input', ()=>{ if(dedos[4]) dedos[4].rotation.z = THREE.MathUtils.degToRad(sliders.Menique.value); });
+
   </script>
 </body>
 </html>
