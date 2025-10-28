@@ -6,8 +6,19 @@
   <title>Control Mano 3D</title>
   <style>
     body { margin: 0; overflow: hidden; background: #111; color: white; font-family: sans-serif; }
-    #sliders { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; }
-    input[type=range] { width: 100px; margin: 0 5px; }
+    #sliders {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px;
+      border-radius: 10px;
+    }
+    input[type=range] {
+      width: 100px;
+      margin: 0 5px;
+    }
   </style>
 </head>
 <body>
@@ -19,35 +30,60 @@
     <input type="range" id="d5" min="0" max="180" value="90">
   </div>
 
+  <!-- Three.js -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/loaders/MTLLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/loaders/OBJLoader.js"></script>
 
   <script>
-    let scene = new THREE.Scene();
-    let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    let renderer = new THREE.WebGLRenderer({antialias:true});
+    // Escena, cámara y renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    let light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(1,1,1);
-    scene.add(light);
+    // Luces
+    const light1 = new THREE.DirectionalLight(0xffffff, 2);
+    light1.position.set(5,5,5);
+    scene.add(light1);
 
-    // Carga del modelo
-    const loader = new THREE.OBJLoader();
-    loader.load('hand_v1_final.obj', function(obj) {
-      obj.scale.set(0.05, 0.05, 0.05);
-      obj.position.set(0, -2, 0);
-      scene.add(obj);
+    const light2 = new THREE.AmbientLight(0x606060);
+    scene.add(light2);
+
+    // Cargar modelo OBJ con materiales
+    let hand;
+    const mtlLoader = new THREE.MTLLoader();
+    mtlLoader.load('Blank.mtl', function(materials){
+      materials.preload();
+      const objLoader = new THREE.OBJLoader();
+      objLoader.setMaterials(materials);
+      objLoader.load('12683_hand_v1_FINAL.obj', function(obj){
+        hand = obj;
+        hand.scale.set(0.01,0.01,0.01); // Ajusta según el tamaño del modelo
+        hand.position.set(0,0,0);
+        scene.add(hand);
+      }, undefined, function(err){
+        console.error("Error cargando OBJ:", err);
+      });
     });
 
-    camera.position.z = 5;
+    camera.position.z = 2;
 
-    function animate() {
+    // Animación
+    function animate(){
       requestAnimationFrame(animate);
+      if(hand) hand.rotation.y += 0.005;
       renderer.render(scene, camera);
     }
     animate();
+
+    // Ajuste de ventana
+    window.addEventListener('resize', ()=>{
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
   </script>
 </body>
 </html>
